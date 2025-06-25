@@ -7,9 +7,6 @@ let quotes = [
 
 const quoteDisplay = document.getElementById('quoteDisplay');
 const newQuoteBtn = document.getElementById('newQuote');
-const addQuoteBtn = document.getElementById('addQuoteButton');
-const newQuoteTextInput = document.getElementById('newQuoteText');
-const newQuoteCategoryInput = document.getElementById('newQuoteCategory');
 
 function showRandomQuote() {
   const randomIndex = Math.floor(Math.random() * quotes.length);
@@ -20,21 +17,42 @@ function showRandomQuote() {
   `;
 }
 
-function addQuote() {
-  const text = newQuoteTextInput.value.trim();
-  const category = newQuoteCategoryInput.value.trim();
+function createAddQuoteForm() {
+  const formDiv = document.createElement('div');
 
-  if (text === "" || category === "") {
-    alert("Both fields are required!");
+  const textInput = document.createElement('input');
+  textInput.id = 'newQuoteText';
+  textInput.placeholder = 'Enter a new quote';
+  formDiv.appendChild(textInput);
+
+  const categoryInput = document.createElement('input');
+  categoryInput.id = 'newQuoteCategory';
+  categoryInput.placeholder = 'Enter quote category';
+  formDiv.appendChild(categoryInput);
+
+  const addButton = document.createElement('button');
+  addButton.textContent = 'Add Quote';
+  addButton.onclick = addQuote;
+  formDiv.appendChild(addButton);
+
+  document.body.appendChild(formDiv);
+}
+
+function addQuote() {
+  const text = document.getElementById('newQuoteText').value.trim();
+  const category = document.getElementById('newQuoteCategory').value.trim();
+
+  if (!text || !category) {
+    alert('Both quote and category are required!');
     return;
   }
 
-  const newQuote = { text, category };
-  quotes.push(newQuote);
-  newQuoteTextInput.value = '';
-  newQuoteCategoryInput.value = '';
-  alert("Quote added successfully!");
+  quotes.push({ text, category });
+  alert('Quote added!');
+  document.getElementById('newQuoteText').value = '';
+  document.getElementById('newQuoteCategory').value = '';
 }
 
 newQuoteBtn.addEventListener('click', showRandomQuote);
-addQuoteBtn.addEventListener('click', addQuote);
+
+createAddQuoteForm();
