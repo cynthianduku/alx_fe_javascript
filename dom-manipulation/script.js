@@ -5,7 +5,6 @@ function loadQuotes() {
   if (storedQuotes) {
     quotes = JSON.parse(storedQuotes);
   } else {
-
     quotes = [
       { text: "Believe in yourself.", category: "Motivation" },
       { text: "Life is short. Smile while you still have teeth.", category: "Humor" },
@@ -65,6 +64,8 @@ function addQuote() {
 
   quotes.push({ text, category });
   saveQuotes();
+  populateCategories(); 
+
   alert('Quote added!');
   document.getElementById('newQuoteText').value = '';
   document.getElementById('newQuoteCategory').value = '';
@@ -90,6 +91,7 @@ function importFromJsonFile(event) {
       if (Array.isArray(importedQuotes)) {
         quotes.push(...importedQuotes);
         saveQuotes();
+        populateCategories(); 
         alert('Quotes imported successfully!');
       } else {
         alert('Invalid JSON format.');
@@ -100,7 +102,59 @@ function importFromJsonFile(event) {
   };
   fileReader.readAsText(event.target.files[0]);
 }
+function populateCategories() {
+  const categorySelect = document.getElementById('categoryFilter');
+  const categories = [...new Set(quotes.map(q => q.category))];
+
+
+  categorySelect.innerHTML = '';
+
+  
+  const allOption = document.createElement('option');
+  allOption.value = 'all';
+  allOption.textContent = 'All';
+  categorySelect.appendChild(allOption);
+
+  
+  categories.forEach(cat => {
+    const option = document.createElement('option');
+    option.value = cat;
+    option.textContent = cat;
+    categorySelect.appendChild(option);
+  });
+
+  
+  const savedFilter = localStorage.getItem('selectedCategory');
+  if (savedFilter && (savedFilter === 'all' || categories.includes(savedFilter))) {
+    categorySelect.value = savedFilter;
+    filterQuotes();
+  }
+}
+
+function filterQuotes() {
+  const selectedCategory = document.getElementById('categoryFilter').value;
+  localStorage.setItem('selectedCategory', selectedCategory);
+
+  let filtered = quotes;
+  if (selectedCategory !== 'all') {
+    filtered = quotes.filter(q => q.category === selectedCategory);
+  }
+
+  
+  if (filtered.length > 0) {
+    const randomIndex = Math.floor(Math.random() * filtered.length);
+    const quote = filtered[randomIndex];
+    quoteDisplay.innerHTML = `
+      <p><strong>Quote:</strong> ${quote.text}</p>
+      <p><strong>Category:</strong> ${quote.category}</p>
+    `;
+  } else {
+    quoteDisplay.innerHTML = `<p>No quotes found in "${selectedCategory}"</p>`;
+  }
+}
+
 
 loadQuotes();
+populateCategories();
 createAddQuoteForm();
 newQuoteBtn.addEventListener('click', showRandomQuote);
