@@ -51,19 +51,6 @@ function createAddQuoteForm() {
   addButton.onclick = addQuote;
   formDiv.appendChild(addButton);
 
-
-  const exportButton = document.createElement('button');
-  exportButton.textContent = 'Export Quotes';
-  exportButton.onclick = exportQuotes;
-  formDiv.appendChild(exportButton);
-
-  const importInput = document.createElement('input');
-  importInput.type = 'file';
-  importInput.accept = '.json';
-  importInput.id = 'importFile';
-  importInput.onchange = importFromJsonFile;
-  formDiv.appendChild(importInput);
-
   document.body.appendChild(formDiv);
 }
 
