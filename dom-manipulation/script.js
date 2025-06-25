@@ -1,5 +1,8 @@
 let quotes = [];
+const SERVER_URL = 'https://jsonplaceholder.typicode.com/posts'; // Use your actual mock endpoint
 
+const quoteDisplay = document.getElementById('quoteDisplay');
+const newQuoteBtn = document.getElementById('newQuote');
 
 function loadQuotes() {
   const storedQuotes = localStorage.getItem('quotes');
@@ -15,28 +18,19 @@ function loadQuotes() {
   }
 }
 
-
 function saveQuotes() {
   localStorage.setItem('quotes', JSON.stringify(quotes));
 }
 
-
 function showRandomQuote() {
   const randomIndex = Math.floor(Math.random() * quotes.length);
   const quote = quotes[randomIndex];
-  displayQuote(quote);
-  sessionStorage.setItem('lastQuote', JSON.stringify(quote));
-}
-
-
-function displayQuote(quote) {
-  const quoteDisplay = document.getElementById('quoteDisplay');
   quoteDisplay.innerHTML = `
     <p><strong>Quote:</strong> ${quote.text}</p>
     <p><strong>Category:</strong> ${quote.category}</p>
   `;
+  sessionStorage.setItem('lastQuote', JSON.stringify(quote));
 }
-
 
 function createAddQuoteForm() {
   const formDiv = document.createElement('div');
@@ -56,9 +50,20 @@ function createAddQuoteForm() {
   addButton.onclick = addQuote;
   formDiv.appendChild(addButton);
 
+  const exportButton = document.createElement('button');
+  exportButton.textContent = 'Export Quotes';
+  exportButton.onclick = exportQuotes;
+  formDiv.appendChild(exportButton);
+
+  const importInput = document.createElement('input');
+  importInput.type = 'file';
+  importInput.accept = '.json';
+  importInput.id = 'importFile';
+  importInput.onchange = importFromJsonFile;
+  formDiv.appendChild(importInput);
+
   document.body.appendChild(formDiv);
 }
-
 
 function addQuote() {
   const text = document.getElementById('newQuoteText').value.trim();
@@ -73,24 +78,19 @@ function addQuote() {
   saveQuotes();
   populateCategories();
   alert('Quote added!');
-
   document.getElementById('newQuoteText').value = '';
   document.getElementById('newQuoteCategory').value = '';
 }
 
-
-function exportToJsonFile() {
+function exportQuotes() {
   const blob = new Blob([JSON.stringify(quotes, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
-
   const a = document.createElement('a');
   a.href = url;
   a.download = 'quotes.json';
   a.click();
-
   URL.revokeObjectURL(url);
 }
-
 
 function importFromJsonFile(event) {
   const fileReader = new FileReader();
@@ -116,7 +116,6 @@ function importFromJsonFile(event) {
 function populateCategories() {
   const categorySelect = document.getElementById('categoryFilter');
   const categories = [...new Set(quotes.map(q => q.category))];
-
   categorySelect.innerHTML = '';
 
   const allOption = document.createElement('option');
@@ -138,21 +137,77 @@ function populateCategories() {
   }
 }
 
-
 function filterQuotes() {
   const selectedCategory = document.getElementById('categoryFilter').value;
   localStorage.setItem('selectedCategory', selectedCategory);
-
   let filtered = quotes;
+
   if (selectedCategory !== 'all') {
     filtered = quotes.filter(q => q.category === selectedCategory);
   }
 
   if (filtered.length > 0) {
-    const quote = filtered[Math.floor(Math.random() * filtered.length)];
-    displayQuote(quote);
+    const randomIndex = Math.floor(Math.random() * filtered.length);
+    const quote = filtered[randomIndex];
+    quoteDisplay.innerHTML = `
+      <p><strong>Quote:</strong> ${quote.text}</p>
+      <p><strong>Category:</strong> ${quote.category}</p>
+    `;
   } else {
-    document.getElementById('quoteDisplay').innerHTML = `<p>No quotes found in "${selectedCategory}"</p>`;
+    quoteDisplay.innerHTML = `<p>No quotes found in "${selectedCategory}"</p>`;
+  }
+}
+
+
+async function fetchQuotesFromServer() {
+  try {
+    const response = await fetch(SERVER_URL);
+    const serverQuotes = await response.json();
+
+    let newQuotes = 0;
+    serverQuotes.forEach(serverQuote => {
+      const exists = quotes.some(localQuote =>
+        localQuote.text === serverQuote.body &&
+        localQuote.category === serverQuote.title
+      );
+      if (!exists) {
+        quotes.push({ text: serverQuote.body, category: serverQuote.title });
+        newQuotes++;
+      }
+    });
+
+    if (newQuotes > 0) {
+      saveQuotes();
+      populateCategories();
+      notifyUser(`${newQuotes} new quote(s) synced from server.`);
+    }
+
+  } catch (error) {
+    console.error("Failed to fetch from server:", error);
+  }
+}
+
+async function syncQuotes() {
+  try {
+    const unsyncedQuotes = quotes.map(q => ({
+      title: q.category,
+      body: q.text,
+      userId: 1
+    }));
+
+    const response = await fetch(SERVER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(unsyncedQuotes)
+    });
+
+    if (response.ok) {
+      notifyUser("Quotes synced with server!");
+    } else {
+      console.error("Failed to sync quotes to server.");
+    }
+  } catch (error) {
+    console.error("Sync error:", error);
   }
 }
 
@@ -167,43 +222,14 @@ function notifyUser(message) {
   }, 5000);
 }
 
-const SERVER_URL = 'https://jsonplaceholder.typicode.com/posts'; // Replace with real mock API
-
-async function fetchQuotesFromServer() {
-  try {
-    const response = await fetch(SERVER_URL);
-    const serverQuotes = await response.json();
-
-    let newQuotes = 0;
-
-    serverQuotes.forEach(serverQuote => {
-      if (serverQuote.body && serverQuote.title) {
-        const exists = quotes.some(localQuote =>
-          localQuote.text === serverQuote.body &&
-          localQuote.category === serverQuote.title
-        );
-
-        if (!exists) {
-          quotes.push({ text: serverQuote.body, category: serverQuote.title });
-          newQuotes++;
-        }
-      }
-    });
-
-    if (newQuotes > 0) {
-      saveQuotes();
-      populateCategories();
-      notifyUser(`${newQuotes} new quote(s) synced with server!`);
-    }
-  } catch (error) {
-    console.error('Failed to fetch from server:', error);
-  }
-}
-
-setInterval(fetchQuotesFromServer, 30000);
-
 
 loadQuotes();
 populateCategories();
 createAddQuoteForm();
-document.getElementById('newQuote').addEventListener('click', showRandomQuote);
+newQuoteBtn.addEventListener('click', showRandomQuote);
+
+
+setInterval(() => {
+  fetchQuotesFromServer();
+  syncQuotes();
+}, 30000);
