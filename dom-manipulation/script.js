@@ -163,7 +163,6 @@ function filterQuotes() {
   }
 }
 
-// ✅ NEW: Server fetch and sync functions
 
 function notifyUser(message) {
   const note = document.getElementById('notification');
@@ -194,8 +193,7 @@ async function fetchQuotesFromServer() {
     if (newQuotes > 0) {
       saveQuotes();
       populateCategories();
-      notifyUser(`${newQuotes} quote(s) synced from server`);
-    }
+      notifyUser("Quotes synced with server!");
   } catch (error) {
     console.error("Server fetch error:", error);
   }
@@ -215,13 +213,13 @@ async function postQuoteToServer(quote) {
   }
 }
 
-// ✅ Periodic sync (every 30 seconds)
+
 function syncQuotes() {
   fetchQuotesFromServer();
 }
 setInterval(syncQuotes, 30000);
 
-// Load on startup
+
 loadQuotes();
 populateCategories();
 createAddQuoteForm();
